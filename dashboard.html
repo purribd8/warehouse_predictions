@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Warehouse Forecast Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #itemSelector { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <h1>Warehouse Demand Forecast Dashboard</h1>
+
+  <label for="itemSelector">Select Item:</label>
+  <select id="itemSelector">
+    <option value="">-- Select an Item --</option>
+    <option value="ITEM_0001_forecast_summary.csv">ITEM_0001</option>
+    <option value="ITEM_0002_forecast_summary.csv">ITEM_0002</option>
+    <option value="ITEM_0003_forecast_summary.csv">ITEM_0003</option>
+    <option value="ITEM_0004_forecast_summary.csv">ITEM_0004</option>
+    <option value="ITEM_0005_forecast_summary.csv">ITEM_0005</option>
+    <option value="ITEM_0006_forecast_summary.csv">ITEM_0006</option>
+    <option value="ITEM_0007_forecast_summary.csv">ITEM_0007</option>
+    <option value="ITEM_0008_forecast_summary.csv">ITEM_0008</option>
+    <option value="ITEM_0009_forecast_summary.csv">ITEM_0009</option>
+    <option value="ITEM_0010_forecast_summary.csv">ITEM_0010</option>
+  </select>
+
+  <canvas id="forecastChart" width="900" height="450"></canvas>
+
+<script>
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  let chart = null;
+
+  function createChart(labels, demand, lower, upper) {
+    if (chart) {
+      chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Forecasted Demand',
+            data: demand,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0,0,255,0.1)',
+            fill: false,
+            tension: 0.2,
+            pointRadius: 3,
+          },
+          {
+            label: 'Confidence Interval',
+            data: upper,
+            borderColor: 'transparent',
+            backgroundColor: 'rgba(0,0,255,0.2)',
+            fill: '+1',
+            pointRadius: 0,
+            tension: 0.2,
+            order: 1,
+          },
+          {
+            label: 'Confidence Interval',
+            data: lower,
+            borderColor: 'transparent',
+            backgroundColor: 'rgba(0,0,255,0.2)',
+            fill: '-1',
+            pointRadius: 0,
+            tension: 0.2,
+            order: 1,
+          }
+        ]
+      },
+      options: {
+        plugins: {
+          legend: { display: true },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { display: true, title: { display: true, text: 'Date' } },
+          y: { display: true, title: { display: true, text: 'Demand' }, beginAtZero: true }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        }
+      }
+    });
+  }
+
+  function loadCSV(filename) {
+    Papa.parse(filename, {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      complete: function(results) {
+        const data = results.data;
+
+        // Filter out any empty rows if present
+        const filteredData = data.filter(row => row.ds && row.yhat !== null);
+
+        const labels = filteredData.map(row => row.ds);
+        const demand = filteredData.map(row => row.yhat);
+        const lower = filteredData.map(row => row.yhat_lower);
+        const upper = filteredData.map(row => row.yhat_upper);
+
+        createChart(labels, demand, lower, upper);
+      },
+      error: function(err) {
+        alert('Error loading CSV: ' + err);
+      }
+    });
+  }
+
+  document.getElementById('itemSelector').addEventListener('change', function() {
+    const selectedFile = this.value;
+    if (selectedFile) {
+      loadCSV(selectedFile);
+    }
+  });
+</script>
+
+</body>
+</html>
