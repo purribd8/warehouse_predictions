@@ -6,13 +6,50 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #itemSelector { margin-bottom: 20px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #f0f4f8, #e0eafc);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    #overview {
+      max-width: 800px;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #555;
+    }
+
+    #itemSelector {
+      margin: 20px 0;
+      padding: 6px 10px;
+      font-size: 16px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
 
   <h1>Warehouse Demand Forecast Dashboard</h1>
+
+  <div id="overview">
+    <p>
+      Welcome to the Warehouse Demand Forecast Dashboard. Use this tool to explore forecasted demand for different inventory items over time. Select an item from the dropdown menu below to view the demand chart along with confidence intervals.
+    </p>
+  </div>
 
   <label for="itemSelector">Select Item:</label>
   <select id="itemSelector">
@@ -31,100 +68,98 @@
 
   <canvas id="forecastChart" width="900" height="450"></canvas>
 
-<script>
-  const ctx = document.getElementById('forecastChart').getContext('2d');
-  let chart = null;
+  <script>
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    let chart = null;
 
-  function createChart(labels, demand, lower, upper) {
-    if (chart) {
-      chart.destroy();
-    }
+    function createChart(labels, demand, lower, upper) {
+      if (chart) {
+        chart.destroy();
+      }
 
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Forecasted Demand',
-            data: demand,
-            borderColor: 'blue',
-            backgroundColor: 'rgba(0,0,255,0.1)',
-            fill: false,
-            tension: 0.2,
-            pointRadius: 3,
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Forecasted Demand',
+              data: demand,
+              borderColor: 'blue',
+              backgroundColor: 'rgba(0,0,255,0.1)',
+              fill: false,
+              tension: 0.2,
+              pointRadius: 3,
+            },
+            {
+              label: 'Confidence Interval',
+              data: upper,
+              borderColor: 'transparent',
+              backgroundColor: 'rgba(0,0,255,0.2)',
+              fill: '+1',
+              pointRadius: 0,
+              tension: 0.2,
+              order: 1,
+            },
+            {
+              label: 'Confidence Interval',
+              data: lower,
+              borderColor: 'transparent',
+              backgroundColor: 'rgba(0,0,255,0.2)',
+              fill: '-1',
+              pointRadius: 0,
+              tension: 0.2,
+              order: 1,
+            }
+          ]
+        },
+        options: {
+          plugins: {
+            legend: { display: true },
+            tooltip: { mode: 'index', intersect: false }
           },
-          {
-            label: 'Confidence Interval',
-            data: upper,
-            borderColor: 'transparent',
-            backgroundColor: 'rgba(0,0,255,0.2)',
-            fill: '+1',
-            pointRadius: 0,
-            tension: 0.2,
-            order: 1,
+          scales: {
+            x: { display: true, title: { display: true, text: 'Date' } },
+            y: { display: true, title: { display: true, text: 'Demand' }, beginAtZero: true }
           },
-          {
-            label: 'Confidence Interval',
-            data: lower,
-            borderColor: 'transparent',
-            backgroundColor: 'rgba(0,0,255,0.2)',
-            fill: '-1',
-            pointRadius: 0,
-            tension: 0.2,
-            order: 1,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
           }
-        ]
-      },
-      options: {
-        plugins: {
-          legend: { display: true },
-          tooltip: { mode: 'index', intersect: false }
-        },
-        scales: {
-          x: { display: true, title: { display: true, text: 'Date' } },
-          y: { display: true, title: { display: true, text: 'Demand' }, beginAtZero: true }
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false
         }
-      }
-    });
-  }
-
-  function loadCSV(filename) {
-    Papa.parse(filename, {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      complete: function(results) {
-        const data = results.data;
-
-        // Filter out any empty rows if present
-        const filteredData = data.filter(row => row.ds && row.yhat !== null);
-
-        const labels = filteredData.map(row => row.ds);
-        const demand = filteredData.map(row => row.yhat);
-        const lower = filteredData.map(row => row.yhat_lower);
-        const upper = filteredData.map(row => row.yhat_upper);
-
-        createChart(labels, demand, lower, upper);
-      },
-      error: function(err) {
-        alert('Error loading CSV: ' + err);
-      }
-    });
-  }
-
-  document.getElementById('itemSelector').addEventListener('change', function() {
-    const selectedFile = this.value;
-    if (selectedFile) {
-      loadCSV(selectedFile);
+      });
     }
-  });
-</script>
+
+    function loadCSV(filename) {
+      Papa.parse(filename, {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+          const data = results.data;
+          const filteredData = data.filter(row => row.ds && row.yhat !== null);
+
+          const labels = filteredData.map(row => row.ds);
+          const demand = filteredData.map(row => row.yhat);
+          const lower = filteredData.map(row => row.yhat_lower);
+          const upper = filteredData.map(row => row.yhat_upper);
+
+          createChart(labels, demand, lower, upper);
+        },
+        error: function(err) {
+          alert('Error loading CSV: ' + err);
+        }
+      });
+    }
+
+    document.getElementById('itemSelector').addEventListener('change', function() {
+      const selectedFile = this.value;
+      if (selectedFile) {
+        loadCSV(selectedFile);
+      }
+    });
+  </script>
 
 </body>
 </html>
