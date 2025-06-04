@@ -15,6 +15,7 @@ Easily interpret predictive trends for planning and procurement
 The forecast data was generated using Facebook's Prophet model and exported into structured CSV summaries. This tool is ideal for analysts, operations managers, or inventory teams seeking to make data-driven stocking decisions.
 
 
+
 🔧 Tech Stack
 
 Chart.js for line graph visualization
@@ -24,6 +25,7 @@ PapaParse for fast CSV parsing in-browser
 Prophet (Python) for time series forecasting (modeling done separately)
 
 Fully client-side HTML/JS — no backend required
+
 
 
 🚀 Possible Enhancements
